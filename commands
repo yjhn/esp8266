@@ -1,0 +1,16 @@
+ESP8266 control commands
+The device is running firmware: https://github.com/janenasl/esp_control_over_serial
+
+# Set up terminal access
+# Replace /dev/ttyUSB0 with actual device name if different
+# Device lookup: execute
+ls -lt /dev/tty* | head -n5
+# right after connecting the device and it will be at the top
+# Enable writing and reading to the device via device file
+sudo stty 9600 -F /dev/ttyUSB0 raw -echo
+
+# Send commands and receive output
+# Commands and responses are in JSON format
+echo '<command>' | sudo tee /dev/ttyUSB0; sudo timeout 2s cat /dev/ttyUSB0
+# when you are root
+echo '{"action":"off","pin":12}' > /dev/ttyUSB0; cat /dev/ttyUSB0
