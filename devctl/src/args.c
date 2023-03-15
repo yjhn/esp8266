@@ -8,8 +8,7 @@
 #include "args.h"
 
 static bool uci_check_success(int ret, const struct uci_ptr *ptr,
-			      const struct uci_context *ctx,
-			      const char *option_name)
+			      struct uci_context *ctx, const char *option_name)
 {
 	if (ret == UCI_ERR_NOTFOUND) {
 		char *error;

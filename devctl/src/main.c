@@ -9,9 +9,7 @@
 #include <libubus.h>
 
 #include "args.h"
-#include "connection.h"
-#include "send_info.h"
-#include "signals.h"
+#include "ubus.h"
 
 const char *options_const[] = { "devctl.devctl.log_level" };
 const size_t options_count = sizeof(options_const) / sizeof(options_const[0]);
@@ -22,7 +20,6 @@ const int log_priorities[8] = { LOG_EMERG,   LOG_ALERT,	 LOG_CRIT, LOG_ERR,
 int main(void)
 {
 	int ret_val = EXIT_SUCCESS;
-	set_up_signal_handler();
 
 	openlog("devctl", LOG_PID | LOG_CONS, LOG_LOCAL0);
 
@@ -53,28 +50,27 @@ int main(void)
 	}
 	setlogmask(LOG_UPTO(log_priorities[log_level]));
 
-	syslog(LOG_DEBUG, "Options: log_level: %d,", log_level);
+	syslog(LOG_DEBUG, "Options: log_level: %d", log_level);
 
 	struct ubus_context *ubus_ctx;
-	ret_val = init_connections(&ubus_ctx);
-	if (ret_val != EXIT_SUCCESS) {
+	if (!init_ubus(&ubus_ctx)) {
 		goto cleanup_end;
 	}
 
-	// Main loop.
-	while (keep_running == 1) {
-	}
-
-	if (keep_running == 0) {
+	int signum = uloop_run();
+	if (signum != 0) {
 		syslog(LOG_INFO, "Got signal to exit");
 	}
+
+	ubus_free(ubus_ctx);
+	uloop_done();
 cleanup_end:
 	syslog(LOG_INFO, "Cleaning up resources and exiting");
 
 	for (size_t i = 0; i < options_count; ++i) {
 		free(option_names[i]);
 	}
-	ubus_free(ubus_ctx);
+
 	uci_free_context(uci_ctx);
 	closelog();
 	return ret_val;
