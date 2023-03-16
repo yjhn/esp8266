@@ -21,6 +21,7 @@ bool get_devices(char *devices[], unsigned int *num_devices,
 // -4 if writing to device fails
 // -5 if reading from device fails
 // -6 if the response buffer is too small
+// -7 if device was disconnected
 int send_msg(const char *device, const char *msg, const size_t msg_len,
 	     char *response, size_t resp_len);
 

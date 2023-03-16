@@ -105,7 +105,8 @@ static bool config_serial(const int *dev, const char *dev_name)
 	tty.c_cflag |= CREAD | CLOCAL;
 	// Read and write raw data (disable special handling of newlines
 	// and other control characters)
-	tty.c_lflag &= ~(tcflag_t)ICANON;
+	//tty.c_lflag &= ~(tcflag_t)ICANON;
+	tty.c_lflag |= (tcflag_t)ICANON;
 	// Disable echo.
 	tty.c_lflag &= ~(tcflag_t)ECHO;
 	// Disable erasure.
@@ -138,11 +139,30 @@ static bool config_serial(const int *dev, const char *dev_name)
 		return false;
 	}
 	// TODO: Since tcsetattr reports success if any of the provided settings
-	// were applied (not neccessarily all), we should check it manually.i
+	// were applied (not neccessarily all), we should check it manually.
 
 	return true;
 }
-
+/*
+static ssize_t read_msg(int fd, char *buf, size_t bufsize)
+{
+	ssize_t read_bytes = read(fd, buf, bufsize - 1);
+	if (read_bytes == -1) {
+		syslog(LOG_ERR, "Error reading from device %s: %m", device);
+		ret_val = -5;
+		goto cleanup;
+	} else if (read_bytes == 0) {
+		syslog(LOG_DEBUG,
+		       "Read 0 bytes from device, maybe disconnected?");
+		return read_bytes;
+	} else {
+		syslog(LOG_DEBUG, "Read %zd bytes from device %s", read_bytes,
+		       device);
+	}
+	// read() does not append null terminator.
+	buf[read_bytes] = '\0';
+}
+*/
 // Returns:
 // 0 on success
 // -1 if failed to open device file
@@ -151,6 +171,7 @@ static bool config_serial(const int *dev, const char *dev_name)
 // -4 if writing to device fails
 // -5 if reading from device fails
 // -6 if the response buffer is too small
+// -7 if device was disconnected
 int send_msg(const char *device, const char *msg, const size_t msg_len,
 	     char *response, size_t resp_len)
 {
@@ -195,6 +216,11 @@ int send_msg(const char *device, const char *msg, const size_t msg_len,
 	if (read_bytes == -1) {
 		syslog(LOG_ERR, "Error reading from device %s: %m", device);
 		ret_val = -5;
+		goto cleanup;
+	} else if (read_bytes == 0) {
+		syslog(LOG_DEBUG,
+		       "Read 0 bytes from device, maybe disconnected?");
+		ret_val = -7;
 		goto cleanup;
 	} else {
 		syslog(LOG_DEBUG, "Read %zd bytes from device %s", read_bytes,

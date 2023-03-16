@@ -55,7 +55,10 @@ static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
 {
 	(void)obj;
 	int ret_val = UBUS_STATUS_OK;
-
+	bool turn_on_pin = false;
+	if (strcmp(method, TURN_ON_PIN_METHOD_NAME) == 0) {
+		turn_on_pin = true;
+	}
 	syslog(LOG_DEBUG, "Received ubus message of type '%s': %s", method,
 	       blobmsg_format_json(msg, true));
 	struct blob_attr *tb[__CTL_MAX];
@@ -75,7 +78,7 @@ static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
 	blob_buf_init(&b, 0);
 
 	char msg_buf[MSG_MAXLEN];
-	if (strcmp(method, TURN_ON_PIN_METHOD_NAME) == 0) {
+	if (turn_on_pin) {
 		sprintf(msg_buf, "{\"action\":\"on\",\"pin\":%u}", dev_pin);
 	} else {
 		sprintf(msg_buf, "{\"action\":\"off\",\"pin\":%u}", dev_pin);
@@ -86,7 +89,22 @@ static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
 			   sizeof(response_buf));
 	switch (ret) {
 	case 0:
-		blobmsg_add_string(&b, NULL, response_buf);
+		syslog(LOG_DEBUG, "Received response '%s'", response_buf);
+		if (turn_on_pin &&
+		    strcmp(response_buf,
+			   "{\"response\": 0, \"msg\": \"Pin was turned on\"}\r\n") ==
+			    0) {
+			blobmsg_add_string(&b, "status", "0");
+		} else if (!turn_on_pin &&
+			   strcmp(response_buf,
+				  "{\"response\": 0, \"msg\": \"Pin was turned off\"}\r\n") ==
+				   0) {
+			blobmsg_add_string(&b, "status", "0");
+
+		} else {
+			blobmsg_add_string(&b, "status", "1");
+			blobmsg_add_string(&b, "error", response_buf);
+		}
 		break;
 	case -1:
 		blobmsg_add_string(&b, NULL, "Failed to open device file");
@@ -111,6 +129,9 @@ static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
 	case -6:
 		blobmsg_add_string(&b, NULL,
 				   "Response is too big for the buffer");
+		break;
+	case -7:
+		blobmsg_add_string(&b, NULL, "Device was disconnected");
 		break;
 	default:
 		syslog(LOG_ERR, "Unrecognized send_msg() return code: %d", ret);
