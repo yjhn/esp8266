@@ -77,18 +77,6 @@ cleanup:
 	return ret_val;
 }
 
-void log_dev_info()
-{
-	char *devices[10];
-	unsigned int num_devs;
-	get_devices(devices, &num_devs, 10);
-	syslog(LOG_DEBUG, "Found %u devices:", num_devs);
-	for (unsigned int i = 0; i < num_devs; ++i) {
-		syslog(LOG_DEBUG, " %s", devices[i]);
-		free(devices[i]);
-	}
-}
-
 // Opens and configures the device with appropirate settings.
 // Returns true on success.
 static bool config_serial(const int *dev, const char *dev_name)
