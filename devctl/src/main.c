@@ -10,6 +10,7 @@
 
 #include "args.h"
 #include "ubus.h"
+#include "serial.h"
 
 const char *options_const[] = { "devctl.devctl.log_level" };
 const size_t options_count = sizeof(options_const) / sizeof(options_const[0]);
@@ -66,11 +67,9 @@ int main(void)
 	uloop_done();
 cleanup_end:
 	syslog(LOG_INFO, "Cleaning up resources and exiting");
-
 	for (size_t i = 0; i < options_count; ++i) {
 		free(option_names[i]);
 	}
-
 	uci_free_context(uci_ctx);
 	closelog();
 	return ret_val;
