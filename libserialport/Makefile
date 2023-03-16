@@ -37,22 +37,18 @@ define Package/libserialport
 endef
 
 define Package/libserialport/description
- Library for accessing serial ports
+	Library for accessing serial ports
 endef
 
 define Build/InstallDev
-	$(INSTALL_DIR) $(1)/usr/include
-	$(CP) $(PKG_INSTALL_DIR)/usr/include/libserialport.h $(1)/usr/include/
-	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libserialport.pc $(1)/usr/lib/pkgconfig/
+	$(INSTALL_DIR) $(1)/usr/include $(1)/usr/lib/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/.libs/{libserialport.so,libserialport.so.*} $(1)/usr/lib/
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/libserialport.h $(1)/usr/include/
 endef
 
 define Package/libserialport/install
 	$(INSTALL_DIR) $(1)/usr/lib/
-	# $(CP) $(PKG_INSTALL_DIR)/usr/lib/libserialport.la $(1)/usr/lib/
-	# $(CP) $(PKG_INSTALL_DIR)/usr/lib/libserialport.a $(1)/usr/lib/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libserialport.so $(1)/usr/lib/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libserialport.so.* $(1)/usr/lib/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/.libs/{libserialport.so,libserialport.so.*} $(1)/usr/lib/
 endef
 
 $(eval $(call BuildPackage,libserialport))
