@@ -49,6 +49,21 @@ static struct ubus_object devctl_object = { .name = "devctl",
 					    .n_methods = ARRAY_SIZE(
 						    devctl_methods) };
 
+static void add_error_response(struct blob_buf *b, char *error_msg)
+{
+	blobmsg_add_u32(b, "status", 1);
+	blobmsg_add_string(b, "error", error_msg);
+}
+static void add_device_error_response(struct blob_buf *b, char *error_msg)
+{
+	blobmsg_add_u32(b, "status", 2);
+	blobmsg_add_string(b, "error", error_msg);
+}
+
+// Status codes:
+// 0 - success,
+// 1 - error on our side,
+// 2 - device reported error.
 static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
 		       struct ubus_request_data *req, const char *method,
 		       struct blob_attr *msg)
@@ -94,48 +109,42 @@ static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
 		    strcmp(response_buf,
 			   "{\"response\": 0, \"msg\": \"Pin was turned on\"}\r\n") ==
 			    0) {
-			blobmsg_add_string(&b, "status", "0");
+			blobmsg_add_u32(&b, "status", 0);
 		} else if (!turn_on_pin &&
 			   strcmp(response_buf,
 				  "{\"response\": 0, \"msg\": \"Pin was turned off\"}\r\n") ==
 				   0) {
-			blobmsg_add_string(&b, "status", "0");
+			blobmsg_add_u32(&b, "status", 0);
 
 		} else {
-			blobmsg_add_string(&b, "status", "1");
-			blobmsg_add_string(&b, "error", response_buf);
+			add_device_error_response(&b, response_buf);
 		}
 		break;
 	case -1:
-		blobmsg_add_string(&b, NULL, "Failed to open device file");
+		add_error_response(&b, "Failed to open device file");
 		break;
 	case -2:
-		blobmsg_add_string(
-			&b, NULL,
-			"Failed to lock the device for exclusive access");
+		add_error_response(
+			&b, "Failed to lock the device for exclusive access");
 		break;
 	case -3:
-		blobmsg_add_string(&b, NULL,
-				   "Failed to configure serial connection");
+		add_error_response(&b, "Failed to configure serial connection");
 		break;
 	case -4:
-		blobmsg_add_string(&b, NULL,
-				   "Failed to send message to device");
+		add_error_response(&b, "Failed to send message to device");
 		break;
 	case -5:
-		blobmsg_add_string(&b, NULL,
-				   "Failed to get response from device");
+		add_error_response(&b, "Failed to get response from device");
 		break;
 	case -6:
-		blobmsg_add_string(&b, NULL,
-				   "Response is too big for the buffer");
+		add_error_response(&b, "Response is too big for the buffer");
 		break;
 	case -7:
-		blobmsg_add_string(&b, NULL, "Device was disconnected");
+		add_error_response(&b, "Device was disconnected");
 		break;
 	default:
 		syslog(LOG_ERR, "Unrecognized send_msg() return code: %d", ret);
-		blobmsg_add_string(&b, NULL, "Internal error");
+		add_error_response(&b, "Internal error");
 	}
 	ret = ubus_send_reply(ctx, req, b.head);
 	if (ret != 0) {
