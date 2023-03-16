@@ -17,11 +17,11 @@
 
 #define MSG_MAXLEN 50
 
-// USB VID and PID of ABESP 8266V3
+// USB VID and PID of NodeMCU 8266V3
 const int VENDOR_ID = 0x10C4;
 const int PRODUCT_ID = 0xEA60;
 
-// Gets ABESP 8266V3 device file names.
+// Gets NodeMCU 8266V3 device file names.
 // devices - array to put device names in
 // max_devices - array size
 // num_devices - actual number of devices found
