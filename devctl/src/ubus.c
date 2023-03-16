@@ -76,9 +76,9 @@ static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
 
 	char msg_buf[MSG_MAXLEN];
 	if (strcmp(method, TURN_ON_PIN_METHOD_NAME) == 0) {
-		sprintf(msg_buf, "{\"action\":\"on\",\"pin\":%u}", pin);
+		sprintf(msg_buf, "{\"action\":\"on\",\"pin\":%u}", dev_pin);
 	} else {
-		sprintf(msg_buf, "{\"action\":\"off\",\"pin\":%u}", pin);
+		sprintf(msg_buf, "{\"action\":\"off\",\"pin\":%u}", dev_pin);
 	}
 
 	char response_buf[MSG_MAXLEN];
@@ -86,7 +86,7 @@ static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
 			   sizeof(response_buf));
 	switch (ret) {
 	case 0:
-		blobmsg_add_string(&b, NULL, response);
+		blobmsg_add_string(&b, NULL, response_buf);
 		break;
 	case -1:
 		blobmsg_add_string(&b, NULL, "Failed to open device file");
@@ -116,7 +116,6 @@ static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
 		syslog(LOG_ERR, "Unrecognized send_msg() return code: %d", ret);
 		blobmsg_add_string(&b, NULL, "Internal error");
 	}
-	blobmsg_add_string(&b, "second_example_key", "second example value");
 	ret = ubus_send_reply(ctx, req, b.head);
 	if (ret != 0) {
 		syslog(LOG_ERR, "Failed to send ubus reply: %s",

@@ -90,37 +90,39 @@ static bool config_serial(const int *dev, const char *dev_name)
 		return false;
 	}
 
+	// All the casts are needed because otherwise compiler complains
+	// about implicit signed to unsigned conversions.
 	// Clear the parity bit.
-	tty.c_cflag &= ~PARENB;
+	tty.c_cflag &= ~(tcflag_t)PARENB;
 	// Use one stop bit.
-	tty.c_cflag &= ~CSTOPB;
+	tty.c_cflag &= ~(tcflag_t)CSTOPB;
 	// Use 8-bit bytes.
-	tty.c_cflag &= ~CSIZE;
+	tty.c_cflag &= ~(tcflag_t)CSIZE;
 	tty.c_cflag |= CS8;
 	// Disable RTS/CTS hardware flow control.
-	tty.c_cflag &= ~CRTSCTS;
+	tty.c_cflag &= ~(tcflag_t)CRTSCTS;
 	// Enable reading and ignore control lines.
 	tty.c_cflag |= CREAD | CLOCAL;
 	// Read and write raw data (disable special handling of newlines
 	// and other control characters)
-	tty.c_lflag &= ~ICANON;
+	tty.c_lflag &= ~(tcflag_t)ICANON;
 	// Disable echo.
-	tty.c_lflag &= ~ECHO;
+	tty.c_lflag &= ~(tcflag_t)ECHO;
 	// Disable erasure.
-	tty.c_lflag &= ~ECHOE;
+	tty.c_lflag &= ~(tcflag_t)ECHOE;
 	// Disable new-line echo.
-	tty.c_lflag &= ~ECHONL;
+	tty.c_lflag &= ~(tcflag_t)ECHONL;
 	// Disable special handling of signal chars.
-	tty.c_lflag &= ~ISIG;
+	tty.c_lflag &= ~(tcflag_t)ISIG;
 	// Turn off software flow control.
-	tty.c_iflag &= ~(IXON | IXOFF | IXANY);
+	tty.c_iflag &= ~(tcflag_t)(IXON | IXOFF | IXANY);
 	// Disable special handling of input bytes.
-	tty.c_iflag &=
-		~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);
+	tty.c_iflag &= ~(tcflag_t)(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR |
+				   IGNCR | ICRNL);
 	// Disable special handling of output bytes.
-	tty.c_oflag &= ~OPOST;
+	tty.c_oflag &= ~(tcflag_t)OPOST;
 	// Prevent \n -> \r\n conversion.
-	tty.c_oflag &= ~ONLCR;
+	tty.c_oflag &= ~(tcflag_t)ONLCR;
 	// Wait for input for 5 seconds max.
 	tty.c_cc[VTIME] = 50;
 	tty.c_cc[VMIN] = 0;
@@ -178,7 +180,7 @@ int send_msg(const char *device, const char *msg, const size_t msg_len,
 		ret_val = -4;
 		goto cleanup;
 	}
-	if (written < msg_len) {
+	if ((size_t)written < msg_len) {
 		syslog(LOG_ERR, "Written %zd out of %zu bytes to device %s",
 		       written, msg_len, device);
 		ret_val = -4;
@@ -201,7 +203,7 @@ int send_msg(const char *device, const char *msg, const size_t msg_len,
 	// read() does not append null terminator.
 	msg_buf[read_bytes] = '\0';
 
-	if (resp_len < read_bytes) {
+	if (resp_len < (size_t)read_bytes) {
 		ret_val = -6;
 		goto cleanup;
 	}
