@@ -7,6 +7,7 @@
 
 #include <libubox/blobmsg_json.h>
 #include <libubus.h>
+#include <json-c/json.h>
 
 #include "ubus.h"
 #include "serial.h"
@@ -16,6 +17,8 @@
 #define LIST_DEVICES_METHOD_NAME "list_devices"
 #define TURN_ON_PIN_METHOD_NAME "turn_on_pin"
 #define TURN_OFF_PIN_METHOD_NAME "turn_off_pin"
+#define TURN_ON_PIN_SUCCESS_MSG "Pin was turned on"
+#define TURN_OFF_PIN_SUCCESS_MSG "Pin was turned off"
 
 // Turn specified pin from specified device on or off.
 static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
@@ -58,6 +61,83 @@ static void add_device_error_response(struct blob_buf *b, char *error_msg)
 {
 	blobmsg_add_u32(b, "status", 2);
 	blobmsg_add_string(b, "error", error_msg);
+}
+
+// Parses response from device and determines if the command was
+// executed successfully.
+// Example responses:
+//  {"response": 0, "msg": "Pin was turned on"}\r\n
+//  {"response": 0, "msg": "Pin was turned off"}\r\n
+// Parameters:
+//  turn_on - cammand was to turn on a pin, otherwise turn off a pin
+// Return codes:
+//  0 - command executed successfully
+//  1 - command failed, error_buf is populated with error message
+// -1 - failed to parse msg, it is invalid JSON, error_buf contains error
+// -2 - msg does not contain required fields, error_buf contains error
+// -3 - error_buf is too small, its contents are undefined
+static int parse_device_response(const char *msg, bool turn_on, char *error_buf,
+				 size_t error_len)
+{
+	int ret_val = 0;
+	enum json_tokener_error err;
+	struct json_object *json = json_tokener_parse_verbose(msg, &err);
+	if (json == NULL) {
+		if ((size_t)snprintf(error_buf, error_len,
+				     "json-c error code %u",
+				     err) >= error_len) {
+			return -3;
+		}
+		return -1;
+	}
+	struct json_object *status = json_object_object_get(json, "response");
+	if (status == NULL || json_object_get_type(status) != json_type_int) {
+		ret_val = -2;
+		if ((size_t)snprintf(
+			    error_buf, error_len,
+			    "'status' field of type number not found in msg") >=
+		    error_len) {
+			ret_val = -3;
+		}
+		goto cleanup_json;
+	}
+	struct json_object *message_obj = json_object_object_get(json, "msg");
+	if (message_obj == NULL) {
+		ret_val = -2;
+		goto cleanup_json;
+	}
+	const char *message = json_object_get_string(message_obj);
+	if (json_object_get_int64(status) != 0) {
+		// Error.
+		ret_val = 1;
+
+		if (message == NULL) {
+			ret_val = -2;
+		} else if ((size_t)snprintf(error_buf, error_len, "%s",
+					    message) >= error_len) {
+			ret_val = -3;
+		}
+		goto cleanup_json;
+	}
+	// Success, just need to check if the expected action was performed.
+	if (turn_on && strcmp(message, TURN_ON_PIN_SUCCESS_MSG) != 0) {
+		ret_val = 1;
+		if ((size_t)snprintf(error_buf, error_len, "%s", message) >=
+		    error_len) {
+			ret_val = -3;
+		}
+		goto cleanup_json;
+	} else if (!turn_on && strcmp(message, TURN_OFF_PIN_SUCCESS_MSG) != 0) {
+		ret_val = 1;
+		if ((size_t)snprintf(error_buf, error_len, "%s", message) >=
+		    error_len) {
+			ret_val = -3;
+		}
+		goto cleanup_json;
+	}
+cleanup_json:
+	json_object_put(json);
+	return ret_val;
 }
 
 // Status codes:
@@ -105,19 +185,34 @@ static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
 	switch (ret) {
 	case 0:
 		syslog(LOG_DEBUG, "Received response '%s'", response_buf);
-		if (turn_on_pin &&
-		    strcmp(response_buf,
-			   "{\"response\": 0, \"msg\": \"Pin was turned on\"}\r\n") ==
-			    0) {
+		ret = parse_device_response(response_buf, turn_on_pin, msg_buf,
+					    sizeof(msg_buf));
+		switch (ret) {
+		case 0:
 			blobmsg_add_u32(&b, "status", 0);
-		} else if (!turn_on_pin &&
-			   strcmp(response_buf,
-				  "{\"response\": 0, \"msg\": \"Pin was turned off\"}\r\n") ==
-				   0) {
-			blobmsg_add_u32(&b, "status", 0);
-
-		} else {
-			add_device_error_response(&b, response_buf);
+			break;
+		case 1:
+			add_device_error_response(&b, msg_buf);
+			break;
+		case -1:
+		case -2:
+			syslog(LOG_ERR,
+			       "Failed to parse response from device. Response: '%s', error: %s",
+			       response_buf, msg_buf);
+			add_device_error_response(
+				&b, "Failed to parse response from device");
+			break;
+		case -3:
+			syslog(LOG_ERR,
+			       "Insufficient error buffer size. Device response: %s",
+			       response_buf);
+			add_device_error_response(&b,
+						  "Insufficient buffer size");
+			break;
+		default:
+			syslog(LOG_ERR,
+			       "Unrecognized parse_device_response() return code: %d",
+			       ret);
 		}
 		break;
 	case -1:
@@ -144,7 +239,6 @@ static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
 		break;
 	default:
 		syslog(LOG_ERR, "Unrecognized send_msg() return code: %d", ret);
-		add_error_response(&b, "Internal error");
 	}
 	ret = ubus_send_reply(ctx, req, b.head);
 	if (ret != 0) {

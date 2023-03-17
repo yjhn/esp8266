@@ -8,7 +8,7 @@ PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 include $(INCLUDE_DIR)/package.mk
 
 define Package/devctl
-	DEPENDS:=+libubus +libubox +libblobmsg-json +libuci +libserialport
+	DEPENDS:=+libubus +libubox +libblobmsg-json +libuci +libserialport +libjson-c
 	CATEGORY:=Utilities
 	TITLE:=Control ESP8266 devices connected to the router via USB
 endef
