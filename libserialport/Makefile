@@ -2,7 +2,6 @@
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
-#
 
 include $(TOPDIR)/rules.mk
 
@@ -29,11 +28,9 @@ include $(INCLUDE_DIR)/package.mk
 TARGET_CFLAGS += $(TARGET_CPPFLAGS)
 
 define Package/libserialport
-  SECTION:=libs
-  CATEGORY:=libs
-  TITLE:=Sigrok libserialport
-  URL:=https://sigrok.org/wiki/Libserialport
-  MENU:=1
+	CATEGORY:=Libraries
+	TITLE:=Sigrok libserialport
+	URL:=https://sigrok.org/wiki/Libserialport
 endef
 
 define Package/libserialport/description
