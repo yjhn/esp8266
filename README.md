@@ -9,7 +9,8 @@ Commands are sent over ubus:
 - `turn_on_pin` turns on a specified pin on the specified device. Command arguments:
   - `device` - device name, same as reported by `list_devices`
   - `pin` - number of the pin to turn on
-- `turn_off_pin` turns off a specified pin on the specified device. Arguments are the same as for `turn_on_pin`.
+  Return value: `{ "status": 0 }` on success. On failure, other status codes with explanations are returned.
+- `turn_off_pin` turns off a specified pin on the specified device. Arguments and return values are the same as for `turn_on_pin`.
 
 ## Repository structure
 
@@ -24,3 +25,12 @@ Commands are sent over ubus:
 Settings:  
 - `enabled` - if enabled , the daemon will automatically start on system boot. Accepted values: `0` or `1`. Default value: `1`.
 - `log_level` - controls application logging (using `syslog`). Accepted values: `0` - `7`. Values correspond to POSIX syslog levels. Higher values enable more logging. Default: `7`.
+
+## Dependencies
+
+- `libserialport`
+- `libubox`
+- `libblobmsg-json`
+- `libuci`
+- `libjson-c`
+- `libubus`
