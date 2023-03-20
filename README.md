@@ -8,7 +8,7 @@ Commands are sent over ubus:
 - `list_devices` lists supported connected devices
 - `turn_on_pin` turns on a specified pin on the specified device. Command arguments:
   - `device` - device name, same as reported by `list_devices`
-  - `pin` - number of the pin to turn on
+  - `pin` - number of the pin to turn on  
   Return value: `{ "status": 0 }` on success. On failure, other status codes with explanations are returned.
 - `turn_off_pin` turns off a specified pin on the specified device. Arguments and return values are the same as for `turn_on_pin`.
 
