@@ -10,7 +10,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/devctl
 	DEPENDS:=+libubus +libubox +libblobmsg-json +libuci +libserialport +libjson-c
 	CATEGORY:=Utilities
-	TITLE:=Control ESP8266 devices connected to the router via USB
+	TITLE:=Control NodeMCU 8266V3 devices connected to the router via USB using ubus
 endef
 
 define Package/devctl/install
