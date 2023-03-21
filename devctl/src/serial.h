@@ -11,7 +11,7 @@
 // num_devices - actual number of devices found
 // returns true on success, false on failure
 bool get_devices(char *devices[], unsigned int *num_devices,
-		 unsigned int max_devices);
+		 const unsigned int max_devices);
 
 // Returns:
 // 0 on success

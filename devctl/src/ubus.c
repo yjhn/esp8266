@@ -316,7 +316,7 @@ static int list_devices(struct ubus_context *ctx, struct ubus_object *obj,
 	}
 	blobmsg_close_array(&b, array);
 	int ret = ubus_send_reply(ctx, req, b.head);
-	if (ret != 0) {
+	if (ret != UBUS_STATUS_OK) {
 		syslog(LOG_ERR, "Failed to send ubus reply: %s",
 		       ubus_strerror(ret));
 		ret_val = ret;

@@ -27,7 +27,7 @@ const int PRODUCT_ID = 0xEA60;
 // num_devices - actual number of devices found
 // returns true on success, false on failure
 bool get_devices(char *devices[], unsigned int *num_devices,
-		 unsigned int max_devices)
+		 const unsigned int max_devices)
 {
 	bool ret_val = true;
 	struct sp_port **port_list;
