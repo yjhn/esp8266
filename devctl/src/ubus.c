@@ -310,6 +310,7 @@ static int list_devices(struct ubus_context *ctx, struct ubus_object *obj,
 	struct blob_buf b = {};
 	blob_buf_init(&b, 0);
 
+	blobmsg_add_u32(&b, "count", num_devs);
 	void *array = blobmsg_open_array(&b, "devices");
 	for (unsigned int i = 0; i < num_devs; ++i) {
 		blobmsg_add_string(&b, NULL, devices[i]);
