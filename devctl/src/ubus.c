@@ -76,12 +76,11 @@ static struct ubus_object devctl_object = { .name = "devctl",
 					    .n_methods = ARRAY_SIZE(
 						    devctl_methods) };
 
-static void add_ubus_error_response(struct blob_buf *b,
-				    enum devctl_status_code status,
-				    char *error_msg)
+static void add_ubus_response(struct blob_buf *b,
+			      enum devctl_status_code status, char *message)
 {
 	blobmsg_add_u32(b, "status", (uint32_t)status);
-	blobmsg_add_string(b, "error", error_msg);
+	blobmsg_add_string(b, "message", message);
 }
 
 // Parses response from device and determines if the command was
@@ -210,18 +209,18 @@ static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
 					    sizeof(msg_buf));
 		switch (ret) {
 		case 0:
-			blobmsg_add_u32(&b, "status", 0);
+			add_ubus_response(&b, DEVCTL_OK,
+					  "Operation performed successfully");
 			break;
 		case 1:
-			add_ubus_error_response(&b, DEVCTL_OPERATION_FAILED,
-						msg_buf);
+			add_ubus_response(&b, DEVCTL_OPERATION_FAILED, msg_buf);
 			break;
 		case -1:
 		case -2:
 			syslog(LOG_ERR,
 			       "Failed to parse response from device. Response: '%s', error: %s",
 			       response_buf, msg_buf);
-			add_ubus_error_response(
+			add_ubus_response(
 				&b, DEVCTL_PARSE_FAILURE,
 				"Failed to parse response from device");
 			break;
@@ -229,52 +228,49 @@ static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
 			syslog(LOG_ERR,
 			       "Insufficient error buffer size. Device response: %s",
 			       response_buf);
-			add_ubus_error_response(&b, DEVCTL_UNKNOWN_ERROR,
-						"Insufficient buffer size");
+			add_ubus_response(&b, DEVCTL_UNKNOWN_ERROR,
+					  "Insufficient buffer size");
 			break;
 		default:
 			syslog(LOG_ERR,
 			       "Unrecognized parse_device_response() return code: %d",
 			       ret);
-			add_ubus_error_response(&b, DEVCTL_INTERNAL_ERROR,
-						"Internal error");
+			add_ubus_response(&b, DEVCTL_INTERNAL_ERROR,
+					  "Internal error");
 		}
 		break;
 	case -1:
-		add_ubus_error_response(&b, DEVCTL_CONNECT_FAIL,
-					"Failed to open device file");
+		add_ubus_response(&b, DEVCTL_CONNECT_FAIL,
+				  "Failed to open device file");
 		break;
 	case -2:
-		add_ubus_error_response(
+		add_ubus_response(
 			&b, DEVCTL_CONNECT_FAIL,
 			"Failed to lock the device for exclusive access");
 		break;
 	case -3:
-		add_ubus_error_response(
-			&b, DEVCTL_CONNECT_FAIL,
-			"Failed to configure serial connection");
+		add_ubus_response(&b, DEVCTL_CONNECT_FAIL,
+				  "Failed to configure serial connection");
 		break;
 	case -4:
-		add_ubus_error_response(&b, DEVCTL_SEND_FAIL,
-					"Failed to send message to device");
+		add_ubus_response(&b, DEVCTL_SEND_FAIL,
+				  "Failed to send message to device");
 		break;
 	case -5:
-		add_ubus_error_response(&b, DEVCTL_RECV_FAIL,
-					"Failed to get response from device");
+		add_ubus_response(&b, DEVCTL_RECV_FAIL,
+				  "Failed to get response from device");
 		break;
 	case -6:
-		add_ubus_error_response(
-			&b, DEVCTL_INTERNAL_ERROR,
-			"Device response is too big for the buffer");
+		add_ubus_response(&b, DEVCTL_INTERNAL_ERROR,
+				  "Device response is too big for the buffer");
 		break;
 	case -7:
-		add_ubus_error_response(&b, DEVCTL_DISCONNECTED,
-					"Device was disconnected");
+		add_ubus_response(&b, DEVCTL_DISCONNECTED,
+				  "Device was disconnected");
 		break;
 	default:
 		syslog(LOG_ERR, "Unrecognized send_msg() return code: %d", ret);
-		add_ubus_error_response(&b, DEVCTL_INTERNAL_ERROR,
-					"Internal error");
+		add_ubus_response(&b, DEVCTL_INTERNAL_ERROR, "Internal error");
 	}
 	ret = ubus_send_reply(ctx, req, b.head);
 	if (ret != 0) {
