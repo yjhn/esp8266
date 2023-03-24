@@ -189,7 +189,7 @@ static int control_pin(struct ubus_context *ctx, struct ubus_object *obj,
 	uint32_t dev_pin = blobmsg_get_u32(tb[CTL_PIN]);
 	syslog(LOG_DEBUG, "dev_id = %s, dev_pin = %u", dev_id, dev_pin);
 
-	struct blob_buf b = {};
+	struct blob_buf b = { 0 };
 	blob_buf_init(&b, 0);
 
 	char msg_buf[MSG_MAXLEN];
