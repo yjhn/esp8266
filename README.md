@@ -35,3 +35,7 @@ Settings:
 - `libuci`
 - `libjson-c`
 - `libubus`
+
+### License
+
+This project is licensed under AGPL v3, except for `libserialport/Makefile`, which is licensed under GPL v2.
