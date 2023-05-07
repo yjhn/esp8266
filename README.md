@@ -38,4 +38,4 @@ Settings:
 
 ### License
 
-This project is licensed under AGPL v3, except for `libserialport/Makefile`, which is licensed under GPL v2.
+This project is licensed under AGPL-3.0-or-later, except for `libserialport/Makefile`, which is licensed under GPL v2.
